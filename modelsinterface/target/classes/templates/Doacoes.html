@@ -1,0 +1,34 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Doações</title>
+
+    <link rel="stylesheet" th:href="@{/Css/estilo.css}">
+    <link rel="stylesheet" th:href="@{/Css/Contas-Centro.css}">
+</head>
+
+<body>
+
+<header class="cabecalho">
+    <h1>Sistema de Cadastros</h1>
+    <p>Cadastro e consulta de doações</p>
+</header>
+
+<main class="container"><section class="cartao"><p id="mensagem" role="status" aria-live="polite"></p><h2>Doações financeiras</h2><form id="formulario"><div class="grade-formulario"><div class="campo"><label for="centro">Centro</label><select id="centro" required></select></div><div class="campo"><label for="origem">Doador / origem</label><input id="origem" type="text" required maxlength="150"></div><div class="campo"><label for="cpf">CPF/CNPJ (opcional)</label><input id="cpf" type="text" maxlength="20"></div><div class="campo"><label for="descricao">Descrição</label><input id="descricao" type="text" maxlength="255"></div><div class="campo"><label for="valor">Valor (R$)</label><input id="valor" type="number" required min="0" step="0.01"></div><div class="campo"><label for="data">Data</label><input id="data" type="date" required></div></div><button class="botao" type="submit">Cadastrar</button></form><h2>Recebimentos registrados</h2><div class="tabela-responsiva"><table><thead><tr><th>Centro</th><th>Doador</th><th>Descrição</th><th>Valor</th><th>Data</th></tr></thead><tbody id="lista"></tbody></table></div><br><a href="/" class="botao-voltar">Voltar ao Menu Principal</a></section></main>
+
+<footer class="rodape">
+    Sistema de Cadastro e Consulta de Doações
+</footer>
+
+
+
+
+<script src="/js/integracao.js"></script><script>
+let centros=[];async function listar(){el('lista').replaceChildren();for(const d of await api('/recebimentos'))row(el('lista'),[centros.find(c=>c.idCentro===d.idCentro)?.nome||d.idCentro,d.origem,d.descricao,money(d.valorRecebido),d.dataRecebimento]);}guard(async()=>{centros=await api('/centros');options('centro',centros,'idCentro',x=>x.nome);await listar();})();submit(async()=>{await api('/recebimentos','POST',{codigoRecebimento:uid(),idCentro:val('centro'),origem:val('origem'),cpfCnpj:val('cpf')||null,descricao:val('descricao'),valorRecebido:Number(val('valor')),dataRecebimento:val('data')});el('formulario').reset();await listar();ok('Recebimento cadastrado.');});
+</script></body>
+</html>

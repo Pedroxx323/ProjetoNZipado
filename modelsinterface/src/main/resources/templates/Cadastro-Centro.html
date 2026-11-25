@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Cadastro de Centros</title>
+
+    <link rel="stylesheet" th:href="@{/Css/estilo.css}">
+
+    <style>
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        button {
+            background-color: #17365d;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #17365d;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="cabecalho">
+    <h1>Sistema de Cadastros</h1>
+    <p>Cadastro e consulta de centros</p>
+</header>
+
+<main class="container"><section class="cartao"><p id="mensagem" role="status" aria-live="polite"></p><h2>Cadastro de Centro</h2><form id="formulario"><div class="grade-formulario"><div class="campo"><label for="nome">Nome do centro</label><input id="nome" type="text" required maxlength="150"></div><div class="campo"><label for="telefone">Telefone</label><input id="telefone" type="tel" maxlength="20"></div><div class="campo"><label for="endereco">Endereço</label><input id="endereco" type="text" required maxlength="255"></div><div class="campo"><label for="usuario">Responsável cadastrado</label><select id="usuario" required></select></div></div><button class="botao" type="submit">Cadastrar</button></form><p><a href="/consultar">Consultar centros</a></p><br><a href="/" class="botao-voltar">Voltar ao Menu Principal</a></section></main>
+
+<footer class="rodape">
+    Sistema de Cadastro Centros
+</footer>
+
+<script src="/js/integracao.js"></script><script>
+guard(async()=>{options('usuario',await api('/usuarios/responsaveis'),'idUsuario',x=>x.nome);})();
+submit(async()=>{await api('/centros','POST',{idCentro:uid(),idUsuario:val('usuario'),nome:val('nome'),telefone:val('telefone'),endereco:val('endereco')});el('formulario').reset();ok('Centro cadastrado com sucesso!');});
+</script></body>
+</html>

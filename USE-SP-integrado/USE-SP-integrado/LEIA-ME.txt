@@ -1,0 +1,10 @@
+USE-SP — integração local
+Abra useService e modelsinterface como projetos Maven no IntelliJ.
+1. Configure o MySQL existente (use_sp), confira application.properties e defina DB_PASSWORD na configuração de execução do useService.
+2. Execute UseServiceApplication (8080).
+3. Execute ModelsinterfaceApplication (8081).
+4. Abra http://localhost:8081/ .
+Pré-requisitos: Java 17+, Maven via IDE, dependências e banco previamente configurado; ao menos um usuário e um tipo de pagamento já cadastrados pela API.
+Não houve teste com MySQL real. A integração é local e não tem controle de acesso na interface; não publicar na internet.
+A interface usa os campos existentes da API: contas não têm fornecedor/documento/descrição; recebimentos são financeiros, não doações de bens; exclusão e edição genéricas não existem na API e foram retiradas da interface.
+A interface antiga useInterface não foi incluída. Nenhuma alteração de esquema foi proposta. O endpoint /usuarios/responsaveis devolve somente id e nome; o endpoint original /usuarios permanece como estava.

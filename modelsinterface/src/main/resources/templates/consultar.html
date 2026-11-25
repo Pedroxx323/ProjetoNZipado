@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Consulta de Centros</title>
+
+    <link rel="stylesheet" th:href="@{/Css/estilo.css}">
+
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #17365d;
+            color: white;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .acoes {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .botao-alterar,
+        .botao-excluir,
+        .botao-salvar,
+        .botao-cancelar {
+            padding: 9px 14px;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .botao-alterar {
+            background-color: #17365d;
+        }
+
+        .botao-excluir {
+            background-color: #c0392b;
+        }
+
+        .botao-salvar {
+            background-color: #218838;
+        }
+
+        .botao-cancelar {
+            background-color: #6c757d;
+        }
+
+        #formulario-edicao {
+            margin-top: 25px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            color: #17365d;
+        }
+
+        #mensagem {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<header class="cabecalho">
+    <h1>Sistema de Centros</h1>
+    <p>Consulta de centros cadastrados</p>
+</header>
+
+<main class="container">
+
+    <section class="cartao">
+
+        <p id="mensagem" role="status" aria-live="polite"></p>
+
+        <h2>Consultar centros</h2>
+
+        <div class="campo">
+            <label for="pesquisa">Pesquisar centro</label>
+            <input id="pesquisa" type="search">
+        </div>
+
+        <div class="tabela-responsiva">
+
+            <table>
+                <thead>
+                <tr>
+                    <th>Centro</th>
+                    <th>Telefone</th>
+                    <th>Endereço</th>
+                    <th>Responsável</th>
+                    <th>Ações</th>
+                </tr>
+                </thead>
+
+                <tbody id="lista"></tbody>
+            </table>
+
+        </div>
+
+        <!-- FORMULÁRIO DE ALTERAÇÃO -->
+
+        <form id="formulario-edicao" hidden>
+
+            <h2>Alterar centro</h2>
+
+            <input type="hidden" id="editar-id">
+
+            <label for="editar-nome">Nome do centro</label>
+            <input type="text" id="editar-nome" required>
+
+            <label for="editar-telefone">Telefone</label>
+            <input type="text" id="editar-telefone" required>
+
+            <label for="editar-endereco">Endereço</label>
+            <input type="text" id="editar-endereco" required>
+
+            <button type="submit" class="botao-salvar">
+                Salvar alterações
+            </button>
+
+            <button type="button"
+                    class="botao-cancelar"
+                    id="cancelar">
+                Cancelar
+            </button>
+
+        </form>
+
+        <br>
+
+        <a href="/" class="botao-voltar">
+            Voltar ao Menu Principal
+        </a>
+
+    </section>
+
+</main>
+
+<footer class="rodape">
+    Sistema de Cadastro e Consulta de Centros
+</footer>
+
+<script>
+
+    let centros = [];
+    let usuarios = [];
+
+    const el = id => document.getElementById(id);
+
+    // COMUNICAÇÃO COM A API
+
+    async function requisicao(caminho, metodo = 'GET', dados = null) {
+
+        const opcoes = {
+            method: metodo,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+
+        if (dados !== null) {
+            opcoes.body = JSON.stringify(dados);
+        }
+
+        const resposta = await fetch('/api' + caminho, opcoes);
+
+        if (!resposta.ok) {
+            const erro = await resposta.text();
+
+            throw new Error(
+                erro || 'Erro na operação: ' + resposta.status
+            );
+        }
+
+        if (resposta.status === 204) {
+            return null;
+        }
+
+        const texto = await resposta.text();
+
+        return texto ? JSON.parse(texto) : null;
+    }
+
+    // EXIBIR MENSAGENS
+
+    function mensagem(texto, erro = false) {
+
+        el('mensagem').textContent = texto;
+
+        el('mensagem').style.color =
+            erro ? '#c0392b' : '#218838';
+    }
+
+    // CARREGAR CENTROS E RESPONSÁVEIS
+
+    async function carregarCentros() {
+
+        [centros, usuarios] = await Promise.all([
+            requisicao('/centros'),
+            requisicao('/usuarios/responsaveis')
+        ]);
+
+        render();
+    }
+
+    // EXIBIR CENTROS NA TABELA
+
+    function render() {
+
+        const lista = el('lista');
+
+        lista.replaceChildren();
+
+        const pesquisa = el('pesquisa')
+            .value.toLowerCase();
+
+        const filtrados = centros.filter(c =>
+            (c.nome || '').toLowerCase().includes(pesquisa)
+        );
+
+        if (filtrados.length === 0) {
+
+            const linha = lista.insertRow();
+            const celula = linha.insertCell();
+
+            celula.colSpan = 5;
+            celula.textContent = 'Nenhum centro encontrado.';
+
+            return;
+        }
+
+        for (const centro of filtrados) {
+
+            const linha = lista.insertRow();
+
+            const responsavel = usuarios.find(
+                u => u.idUsuario === centro.idUsuario
+            );
+
+            const valores = [
+                centro.nome,
+                centro.telefone,
+                centro.endereco,
+                responsavel?.nome || centro.idUsuario
+            ];
+
+            for (const valor of valores) {
+                linha.insertCell().textContent = valor ?? '';
+            }
+
+            const celulaAcoes = linha.insertCell();
+
+            const acoes = document.createElement('div');
+            acoes.className = 'acoes';
+
+            const alterar = document.createElement('button');
+
+            alterar.type = 'button';
+            alterar.textContent = 'Alterar';
+            alterar.className = 'botao-alterar';
+
+            alterar.onclick = () => abrirEdicao(centro);
+
+            const excluir = document.createElement('button');
+
+            excluir.type = 'button';
+            excluir.textContent = 'Excluir';
+            excluir.className = 'botao-excluir';
+
+            excluir.onclick = () => excluirCentro(centro);
+
+            acoes.append(alterar, excluir);
+
+            celulaAcoes.appendChild(acoes);
+        }
+    }
+
+    // ABRIR FORMULÁRIO DE ALTERAÇÃO
+
+    function abrirEdicao(centro) {
+
+        el('editar-id').value = centro.idCentro;
+        el('editar-nome').value = centro.nome || '';
+        el('editar-telefone').value = centro.telefone || '';
+        el('editar-endereco').value = centro.endereco || '';
+
+        el('formulario-edicao').hidden = false;
+
+        mensagem('');
+
+        el('formulario-edicao').scrollIntoView({
+            behavior: 'smooth'
+        });
+    }
+
+    // CANCELAR ALTERAÇÃO
+
+    el('cancelar').onclick = () => {
+
+        el('formulario-edicao').hidden = true;
+        el('formulario-edicao').reset();
+    };
+
+    // SALVAR ALTERAÇÃO
+
+    el('formulario-edicao').onsubmit = async evento => {
+
+        evento.preventDefault();
+
+        const id = el('editar-id').value;
+
+        const dados = {
+            nome: el('editar-nome').value.trim(),
+            telefone: el('editar-telefone').value.trim(),
+            endereco: el('editar-endereco').value.trim()
+        };
+
+        if (!dados.nome || !dados.telefone || !dados.endereco) {
+            mensagem('Preencha todos os campos.', true);
+            return;
+        }
+
+        try {
+
+            await requisicao(
+                '/centros/' + encodeURIComponent(id),
+                'PUT',
+                dados
+            );
+
+            el('formulario-edicao').hidden = true;
+            el('formulario-edicao').reset();
+
+            await carregarCentros();
+
+            mensagem('Centro alterado com sucesso!');
+
+        } catch (erro) {
+
+            mensagem(erro.message, true);
+        }
+    };
+
+    // EXCLUIR CENTRO
+
+    async function excluirCentro(centro) {
+
+        const confirmado = confirm(
+            'Deseja realmente excluir o centro "' +
+            centro.nome + '"?'
+        );
+
+        if (!confirmado) {
+            return;
+        }
+
+        try {
+
+            await requisicao(
+                '/centros/' + encodeURIComponent(centro.idCentro),
+                'DELETE'
+            );
+
+            if (el('editar-id').value === centro.idCentro) {
+                el('formulario-edicao').hidden = true;
+                el('formulario-edicao').reset();
+            }
+
+            await carregarCentros();
+
+            mensagem('Centro excluído com sucesso!');
+
+        } catch (erro) {
+
+            mensagem(erro.message, true);
+        }
+    }
+
+    // PESQUISA EM TEMPO REAL
+
+    el('pesquisa').oninput = render;
+
+    // INICIALIZAR PÁGINA
+
+    carregarCentros().catch(erro => {
+
+        mensagem(erro.message, true);
+    });
+
+</script>
+
+</body>
+
+</html>
